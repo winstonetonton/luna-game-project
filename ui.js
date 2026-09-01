@@ -1,4 +1,5 @@
 
+(()=>{
 "use strict";
 const {Side,Kind,Game,runStep}=window.LunaGame;
 let game=null,timer=null;
@@ -46,3 +47,4 @@ window.addEventListener("DOMContentLoaded",()=>{
   $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=()=> $("overlay").classList.add("hidden");
   newGame();
 });
+})();

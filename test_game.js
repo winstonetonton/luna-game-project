@@ -1,6 +1,8 @@
 
 "use strict";
 const assert=require("assert");
+const fs=require("fs");
+const vm=require("vm");
 const {Side,Kind,SPECS,Game,runStep}=require("./game_core.js");
 
 function test(name,fn){try{fn();console.log("PASS",name)}catch(e){console.error("FAIL",name,e);process.exitCode=1}}
@@ -17,3 +19,8 @@ test("Melee kill advances",()=>{let g=new Game(1);let a=g.addUnit(1,Kind.ROOK,[2
 test("Signature ignores UID",()=>{let a=new Game(5),b=new Game(5);a.addUnit(1,Kind.PAWN,[1,2],{spend:false,ready:true});b.nextUid=50;b.addUnit(1,Kind.PAWN,[1,2],{spend:false,ready:true});assert.equal(a.normalizedSignature(),b.normalizedSignature())});
 test("Repetition draw fires on fourth identical state",()=>{let g=new Game(5);for(let i=0;i<4;i++)g.checkRepetition();assert.equal(g.drawType,"REPETITION_DRAW")});
 test("Full engine steps without exception",()=>{let g=new Game(12);for(let i=0;i<20&&!g.winner&&!g.drawType;i++)runStep(g,"rush","ranged");assert(g.now>0)});
+test("Browser scripts share a page without global declaration collisions",()=>{
+  const context=vm.createContext({window:{addEventListener(){}},console,setInterval,clearInterval});
+  vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
+  vm.runInContext(fs.readFileSync("./ui.js","utf8"),context,{filename:"ui.js"});
+});
