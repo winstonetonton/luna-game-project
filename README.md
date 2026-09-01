@@ -14,8 +14,15 @@ Included:
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 
-Run tests:
-`node test_game.js`
+## Quality checks
+
+Run the engine and UI regression suite:
+
+```sh
+node test_game.js
+```
+
+The suite covers the game rules, shared browser-script scope, and the DESTINY / START control flow. GitHub Actions runs it automatically for every push and pull request targeting `main`.
 
 Local preview:
 `python3 -m http.server 8000`

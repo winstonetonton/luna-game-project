@@ -24,3 +24,36 @@ test("Browser scripts share a page without global declaration collisions",()=>{
   vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
   vm.runInContext(fs.readFileSync("./ui.js","utf8"),context,{filename:"ui.js"});
 });
+test("DESTINY and START controls work in a browser-like DOM",()=>{
+  const elements=new Map();
+  const makeElement=()=>({
+    value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
+    classList:{add(){},remove(){}},appendChild(child){this.children.push(child)}
+  });
+  for(const id of ["seed","overlay","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
+    elements.set(id,makeElement());
+  }
+  elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
+  let ready,intervalCallback,cleared=false;
+  const window={addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback}};
+  const document={getElementById(id){return elements.get(id)},createElement(){return makeElement()}};
+  const context=vm.createContext({window,document,console,
+    setInterval(callback){intervalCallback=callback;return 1},
+    clearInterval(){cleared=true}
+  });
+  vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
+  vm.runInContext(fs.readFileSync("./ui.js","utf8"),context,{filename:"ui.js"});
+  ready();
+  assert.match(elements.get("log").textContent,/DESTINY: Tower/);
+  assert.equal(elements.get("board").children.length,40);
+  elements.get("new").onclick();
+  assert.equal(elements.get("time").textContent,0);
+  elements.get("start").onclick();
+  assert.equal(elements.get("start").textContent,"PAUSE");
+  assert.equal(elements.get("time").textContent,3);
+  intervalCallback();
+  assert.equal(elements.get("time").textContent,6);
+  elements.get("start").onclick();
+  assert.equal(elements.get("start").textContent,"START");
+  assert(cleared);
+});
