@@ -26,7 +26,13 @@ function step(){
     $("overlay").classList.remove("hidden");
   }
 }
-function start(){ if(timer){stop();return;} step(); timer=setInterval(step,650); $("start").textContent="PAUSE"; }
+function start(){
+  if(timer){stop();return;}
+  step();
+  if(game.winner||game.drawType)return;
+  timer=setInterval(step,650);
+  $("start").textContent="PAUSE";
+}
 function stop(){if(timer){clearInterval(timer);timer=null;}$("start").textContent="START";}
 function render(){
   $("board").innerHTML="";

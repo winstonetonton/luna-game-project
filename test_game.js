@@ -30,7 +30,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
     value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
     classList:{add(){},remove(){}},appendChild(child){this.children.push(child)}
   });
-  for(const id of ["seed","overlay","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
@@ -56,4 +56,11 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   elements.get("start").onclick();
   assert.equal(elements.get("start").textContent,"START");
   assert(cleared);
+
+  for(let i=0;i<1000&&!elements.get("resultTitle").textContent;i++)elements.get("step").onclick();
+  assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
+  intervalCallback=null;
+  elements.get("start").onclick();
+  assert.equal(intervalCallback,null,"START must not schedule a timer after the game ends");
+  assert.equal(elements.get("start").textContent,"START");
 });
