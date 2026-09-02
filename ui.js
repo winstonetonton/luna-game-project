@@ -74,6 +74,7 @@ function render(){
   }
   $("time").textContent=game.now;$("p1").textContent=game.players[1].points;$("p2").textContent=game.players[2].points;
   $("towers").textContent=game.towerCount;$("score").textContent=`${game.players[1].towers} - ${game.players[2].towers}`;
+  $("objectives").textContent=`${game.objectiveScore(Side.P1)} - ${game.objectiveScore(Side.P2)}`;
   $("stall").textContent=game.stallState();
 }
 window.addEventListener("DOMContentLoaded",()=>{

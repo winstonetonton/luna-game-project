@@ -60,7 +60,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
       appendChild(child){this.children.push(child)},focus(){this.focused=true}
     };
   };
-  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","limit","p1","p2","towers","score","stall","new","random","step","start","close","ai1","ai2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","limit","p1","p2","towers","score","objectives","stall","new","random","step","start","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
@@ -80,6 +80,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert.equal(elements.get("limit").textContent,MATCH_LIMIT_SECONDS);
   assert.match(elements.get("log").textContent,/DESTINY: Tower/);
   assert.equal(elements.get("board").children.length,40);
+  assert.equal(elements.get("objectives").textContent,"0 - 0");
   elements.get("random").onclick();
   assert.equal(elements.get("seed").value,"123456789");
   assert.equal(elements.get("time").textContent,0);
