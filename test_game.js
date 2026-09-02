@@ -57,6 +57,15 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert.equal(elements.get("start").textContent,"START");
   assert(cleared);
 
+  cleared=false;
+  elements.get("start").onclick();
+  assert.equal(elements.get("start").textContent,"PAUSE");
+  elements.get("new").onclick();
+  assert(cleared,"DESTINY must stop the active autoplay timer");
+  assert.equal(elements.get("start").textContent,"START");
+  assert.equal(elements.get("time").textContent,0);
+  assert.equal((elements.get("log").textContent.match(/DESTINY:/g)||[]).length,1);
+
   for(let i=0;i<1000&&!elements.get("resultTitle").textContent;i++)elements.get("step").onclick();
   assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
   intervalCallback=null;

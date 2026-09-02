@@ -6,9 +6,11 @@ let game=null,timer=null;
 const $=id=>document.getElementById(id);
 
 function newGame(){
+  stop();
   const seed=parseInt($("seed").value||"1",10);
   game=new Game(seed);
   $("overlay").classList.add("hidden");
+  $("log").textContent="";
   log(`DESTINY: Tower ×${game.towerCount}`);
   render();
 }
