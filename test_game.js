@@ -64,10 +64,10 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
     return {
       value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
       classList:{add(value){classes.add(value)},remove(value){classes.delete(value)},contains(value){return classes.has(value)}},
-      appendChild(child){this.children.push(child)},focus(){this.focused=true}
+      appendChild(child){this.children.push(child)},setAttribute(name,value){this[name]=value},focus(){this.focused=true}
     };
   };
-  for(const id of ["seed","overlay","resultTitle","resultText","copyStatus","log","board","time","limit","p1","p2","towers","score","objectives","stall","new","random","step","start","copy","close","ai1","ai2","humanPanel","human1","human2","kind1","kind2","cell1","cell2","deploy1","deploy2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","copyStatus","log","board","time","limit","p1","p2","towers","score","objectives","stall","new","random","step","start","copy","close","ai1","ai2","humanPanel","human1","human2","kind1","kind2","humanStatus1","humanStatus2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";elements.get("kind1").value="歩";elements.get("kind2").value="歩";
@@ -145,10 +145,15 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert(!elements.get("humanPanel").classList.contains("hidden"));
   assert(!elements.get("human1").classList.contains("hidden"));
   assert(elements.get("human2").classList.contains("hidden"));
-  elements.get("deploy1").onclick();
+  assert.match(elements.get("humanStatus1").textContent,/青く光るマス/);
+  const deployCell=[...elements.get("board").children].reverse().find(cell=>typeof cell.onclick==="function");
+  assert(deployCell,"expected a directly clickable deployment cell");
+  deployCell.onclick();
   assert.match(elements.get("log").textContent,/P1 deploy 歩/);
-  assert.equal(elements.get("deploy1").disabled,true,"only one manual deployment is allowed per round");
+  assert.match(elements.get("humanStatus1").textContent,/配置済み/);
+  assert(!elements.get("board").children.slice(-40).some(cell=>typeof cell.onclick==="function"),"only one manual deployment is allowed per round");
   elements.get("step").onclick();
   assert.equal(elements.get("time").textContent,3);
+  assert(elements.get("board").children.slice(-40).some(cell=>typeof cell.onclick==="function"),"deployment cells must reactivate next round");
 });
 

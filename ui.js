@@ -6,6 +6,10 @@ let game=null,timer=null,manualReady={[Side.P1]:true,[Side.P2]:true};
 const $=id=>document.getElementById(id);
 const humanSide=side=>$("ai"+side).value==="human";
 const hasHuman=()=>humanSide(Side.P1)||humanSide(Side.P2);
+function canManualDeploy(side){
+  const kind=$("kind"+side).value,cost=window.LunaGame.SPECS[kind]?.cost??Infinity;
+  return humanSide(side)&&manualReady[side]&&!game.winner&&!game.drawType&&game.players[side].points>=cost;
+}
 
 function seedValue(){
   const value=Number($("seed").value);
@@ -56,11 +60,10 @@ function step(){
     $("close").focus();
   }
 }
-function manualDeploy(side){
+function manualDeploy(side,pos){
   if(!game||!humanSide(side)||!manualReady[side]||game.winner||game.drawType)return;
   const kind=$("kind"+side).value;
-  const pos=$("cell"+side).value.split(",").map(Number);
-  if(pos.length!==2||pos.some(Number.isNaN))return;
+  if(!game.spawnCells(side).some(cell=>cell[0]===pos[0]&&cell[1]===pos[1]))return;
   try{
     game.addUnit(side,kind,pos,{spend:true});
     manualReady[side]=false;
@@ -94,6 +97,13 @@ function render(){
   $("board").innerHTML="";
   for(let y=0;y<5;y++)for(let x=0;x<8;x++){
     const c=document.createElement("div");c.className="cell";
+    const side=x<4?Side.P1:Side.P2;
+    if(canManualDeploy(side)&&game.spawnCells(side).some(pos=>pos[0]===x&&pos[1]===y)){
+      c.classList.add("deployable");c.classList.add(side===Side.P1?"p1-deploy":"p2-deploy");
+      c.tabIndex=0;c.setAttribute("role","button");c.setAttribute("aria-label",`P${side}を${x+1}${String.fromCharCode(65+y)}に配置`);
+      c.onclick=()=>manualDeploy(side,[x,y]);
+      c.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();manualDeploy(side,[x,y]);}};
+    }
     const o=game.objectives.find(o=>o.pos[0]===x&&o.pos[1]===y);
     if(o){const q=document.createElement("span");q.className=`obj ${o.kind}`;q.textContent=o.kind==="tower"?"T":"O";if(o.captured)q.textContent+="✓";c.appendChild(q);}
     const u=game.unitAt([x,y]);
@@ -110,24 +120,20 @@ function render(){
 function syncHumanControls(){
   $("humanPanel").classList[hasHuman()?"remove":"add"]("hidden");
   for(const side of [Side.P1,Side.P2]){
-    const row=$("human"+side),cell=$("cell"+side),button=$("deploy"+side),kind=$("kind"+side);
+    const row=$("human"+side),kind=$("kind"+side),status=$("humanStatus"+side);
     row.classList[humanSide(side)?"remove":"add"]("hidden");
     if(!humanSide(side))continue;
-    const previous=cell.value,cells=game.spawnCells(side);
-    cell.innerHTML="";
-    for(const pos of cells){
-      const option=document.createElement("option");option.value=pos.join(",");option.textContent=`${pos[0]+1}${String.fromCharCode(65+pos[1])}`;cell.appendChild(option);
-    }
-    cell.value=cells.some(pos=>pos.join(",")===previous)?previous:(cells[0]?.join(",")||"");
     const cost=window.LunaGame.SPECS[kind.value]?.cost??Infinity;
-    button.disabled=!manualReady[side]||!cells.length||game.players[side].points<cost||!!game.winner||!!game.drawType;
+    kind.disabled=!manualReady[side]||!!game.winner||!!game.drawType;
+    if(!manualReady[side])status.textContent="配置済み ✓　+3s で進行";
+    else if(game.players[side].points<cost)status.textContent=`ポイント不足（必要 ${cost}pt）`;
+    else status.textContent=`${side===Side.P1?"青":"赤"}く光るマスをクリック`;
   }
 }
 window.addEventListener("DOMContentLoaded",()=>{
   $("limit").textContent=MATCH_LIMIT_SECONDS;
   $("new").onclick=newGame;$("random").onclick=randomGame;$("step").onclick=step;$("start").onclick=start;$("copy").onclick=copyResult;$("close").onclick=closeResult;
-  $("ai1").onchange=newGame;$("ai2").onchange=newGame;$("kind1").onchange=syncHumanControls;$("kind2").onchange=syncHumanControls;
-  $("deploy1").onclick=()=>manualDeploy(Side.P1);$("deploy2").onclick=()=>manualDeploy(Side.P2);
+  $("ai1").onchange=newGame;$("ai2").onchange=newGame;$("kind1").onchange=render;$("kind2").onchange=render;
   newGame();
 });
 window.addEventListener("keydown",event=>{if(event.key==="Escape")closeResult();});

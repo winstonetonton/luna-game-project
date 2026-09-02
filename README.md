@@ -14,7 +14,7 @@ Included:
 - 180-second timeout decided by total captured Towers and Outposts
 - live captured-objective score and an in-game timeout rule reminder
 - copyable playtest result summaries with Seed, AI matchup, outcome, time, and scores
-- selectable HUMAN controllers for human-vs-CPU and local human-vs-human deployment play
+- direct board-click deployment for HUMAN-vs-CPU and local HUMAN-vs-HUMAN play
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 - reproducible Seed input plus one-click random games
