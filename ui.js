@@ -16,6 +16,8 @@ function newGame(){
   stop();
   const seed=seedValue();
   game=new Game(seed);
+  $("step").disabled=false;
+  $("start").disabled=false;
   $("overlay").classList.add("hidden");
   $("log").textContent="";
   log(`DESTINY: Tower ×${game.towerCount}`);
@@ -31,6 +33,8 @@ function step(){
   render();
   if(game.winner||game.drawType){
     stop();
+    $("step").disabled=true;
+    $("start").disabled=true;
     $("resultTitle").textContent=game.winner?`P${game.winner} VICTORY`:game.drawType.replaceAll("_"," ");
     $("resultText").textContent=`TIME ${game.now}s / Tower ${game.players[1].towers}-${game.players[2].towers}`;
     $("overlay").classList.remove("hidden");

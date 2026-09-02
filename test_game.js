@@ -85,6 +85,8 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
 
   for(let i=0;i<1000&&!elements.get("resultTitle").textContent;i++)elements.get("step").onclick();
   assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
+  assert.equal(elements.get("step").disabled,true);
+  assert.equal(elements.get("start").disabled,true);
   const finalTime=elements.get("time").textContent;
   elements.get("close").onclick();
   elements.get("step").onclick();
@@ -94,5 +96,8 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   elements.get("start").onclick();
   assert.equal(intervalCallback,null,"START must not schedule a timer after the game ends");
   assert.equal(elements.get("start").textContent,"START");
+  elements.get("new").onclick();
+  assert.equal(elements.get("step").disabled,false);
+  assert.equal(elements.get("start").disabled,false);
 });
 
