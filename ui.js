@@ -24,6 +24,7 @@ function newGame(){
 function log(s){$("log").textContent+=`[${game?game.now:0}s] ${s}\n`;$("log").scrollTop=$("log").scrollHeight;}
 function step(){
   if(!game)newGame();
+  if(game.winner||game.drawType)return;
   const prev=game.events.length;
   runStep(game,$("ai1").value,$("ai2").value);
   for(const e of game.events.slice(prev))log(`${e.event} ${JSON.stringify(e)}`);
@@ -63,3 +64,4 @@ window.addEventListener("DOMContentLoaded",()=>{
   newGame();
 });
 })();
+

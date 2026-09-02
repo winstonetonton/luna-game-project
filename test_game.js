@@ -35,10 +35,14 @@ test("Browser scripts share a page without global declaration collisions",()=>{
 });
 test("DESTINY and START controls work in a browser-like DOM",()=>{
   const elements=new Map();
-  const makeElement=()=>({
-    value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
-    classList:{add(){},remove(){}},appendChild(child){this.children.push(child)}
-  });
+  const makeElement=()=>{
+    const classes=new Set();
+    return {
+      value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
+      classList:{add(value){classes.add(value)},remove(value){classes.delete(value)},contains(value){return classes.has(value)}},
+      appendChild(child){this.children.push(child)}
+    };
+  };
   for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
@@ -81,8 +85,14 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
 
   for(let i=0;i<1000&&!elements.get("resultTitle").textContent;i++)elements.get("step").onclick();
   assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
+  const finalTime=elements.get("time").textContent;
+  elements.get("close").onclick();
+  elements.get("step").onclick();
+  assert.equal(elements.get("time").textContent,finalTime);
+  assert(elements.get("overlay").classList.contains("hidden"),"+3s must not reopen a completed result");
   intervalCallback=null;
   elements.get("start").onclick();
   assert.equal(intervalCallback,null,"START must not schedule a timer after the game ends");
   assert.equal(elements.get("start").textContent,"START");
 });
+
