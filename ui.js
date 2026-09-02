@@ -38,6 +38,7 @@ function step(){
     $("resultTitle").textContent=game.winner?`P${game.winner} VICTORY`:game.drawType.replaceAll("_"," ");
     $("resultText").textContent=`TIME ${game.now}s / Tower ${game.players[1].towers}-${game.players[2].towers}`;
     $("overlay").classList.remove("hidden");
+    $("close").focus();
   }
 }
 function start(){
@@ -64,7 +65,7 @@ function render(){
   $("stall").textContent=game.stallState();
 }
 window.addEventListener("DOMContentLoaded",()=>{
-  $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=()=> $("overlay").classList.add("hidden");
+  $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=()=>{$("overlay").classList.add("hidden");$("new").focus();};
   newGame();
 });
 })();

@@ -40,7 +40,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
     return {
       value:"",textContent:"",innerHTML:"",scrollTop:0,scrollHeight:0,children:[],
       classList:{add(value){classes.add(value)},remove(value){classes.delete(value)},contains(value){return classes.has(value)}},
-      appendChild(child){this.children.push(child)}
+      appendChild(child){this.children.push(child)},focus(){this.focused=true}
     };
   };
   for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
@@ -87,8 +87,10 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
   assert.equal(elements.get("step").disabled,true);
   assert.equal(elements.get("start").disabled,true);
+  assert.equal(elements.get("close").focused,true);
   const finalTime=elements.get("time").textContent;
   elements.get("close").onclick();
+  assert.equal(elements.get("new").focused,true);
   elements.get("step").onclick();
   assert.equal(elements.get("time").textContent,finalTime);
   assert(elements.get("overlay").classList.contains("hidden"),"+3s must not reopen a completed result");
