@@ -26,6 +26,9 @@ function newGame(){
   $("step").disabled=false;
   $("start").disabled=false;
   $("overlay").classList.add("hidden");
+  $("resultTitle").textContent="";
+  $("resultText").textContent="";
+  $("copyStatus").textContent="";
   $("log").textContent="";
   log(`DESTINY: Tower ×${game.towerCount}`);
   render();
@@ -42,10 +45,19 @@ function step(){
     stop();
     $("step").disabled=true;
     $("start").disabled=true;
-    $("resultTitle").textContent=game.winner?`P${game.winner} ${game.winType==="TIMEOUT"?"TIMEOUT ":""}VICTORY`:game.drawType.replaceAll("_"," ");
-    $("resultText").textContent=`TIME ${game.now}s / Tower ${game.players[1].towers}-${game.players[2].towers} / Objectives ${game.objectiveScore(1)}-${game.objectiveScore(2)}`;
+    const result=game.winner?`P${game.winner} ${game.winType==="TIMEOUT"?"TIMEOUT ":""}VICTORY`:game.drawType.replaceAll("_"," ");
+    $("resultTitle").textContent=result;
+    $("resultText").textContent=`Seed ${game.seed} | P1 ${$("ai1").value} vs P2 ${$("ai2").value} | ${result} | Time ${game.now}s | Tower ${game.players[1].towers}-${game.players[2].towers} | Objectives ${game.objectiveScore(1)}-${game.objectiveScore(2)}`;
     $("overlay").classList.remove("hidden");
     $("close").focus();
+  }
+}
+async function copyResult(){
+  try{
+    await navigator.clipboard.writeText($("resultText").textContent);
+    $("copyStatus").textContent="COPIED";
+  }catch{
+    $("copyStatus").textContent="COPY FAILED — 結果テキストを選択してください";
   }
 }
 function start(){
@@ -79,7 +91,7 @@ function render(){
 }
 window.addEventListener("DOMContentLoaded",()=>{
   $("limit").textContent=MATCH_LIMIT_SECONDS;
-  $("new").onclick=newGame;$("random").onclick=randomGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=closeResult;
+  $("new").onclick=newGame;$("random").onclick=randomGame;$("step").onclick=step;$("start").onclick=start;$("copy").onclick=copyResult;$("close").onclick=closeResult;
   newGame();
 });
 window.addEventListener("keydown",event=>{if(event.key==="Escape")closeResult();});

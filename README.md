@@ -13,6 +13,7 @@ Included:
 - fourfold normalized-state repetition draw
 - 180-second timeout decided by total captured Towers and Outposts
 - live captured-objective score and an in-game timeout rule reminder
+- copyable playtest result summaries with Seed, AI matchup, outcome, time, and scores
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 - reproducible Seed input plus one-click random games

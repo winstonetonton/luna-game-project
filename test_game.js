@@ -60,7 +60,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
       appendChild(child){this.children.push(child)},focus(){this.focused=true}
     };
   };
-  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","limit","p1","p2","towers","score","objectives","stall","new","random","step","start","close","ai1","ai2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","copyStatus","log","board","time","limit","p1","p2","towers","score","objectives","stall","new","random","step","start","copy","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
@@ -70,7 +70,9 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
     addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback;if(type==="keydown")keydown=callback}
   };
   const document={getElementById(id){return elements.get(id)},createElement(){return makeElement()}};
-  const context=vm.createContext({window,document,console,
+  let copiedText="";
+  const navigator={clipboard:{writeText(text){copiedText=text;return Promise.resolve()}}};
+  const context=vm.createContext({window,document,navigator,console,
     setInterval(callback){intervalCallback=callback;return 1},
     clearInterval(){cleared=true}
   });
@@ -111,6 +113,9 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
 
   for(let i=0;i<1000&&!elements.get("resultTitle").textContent;i++)elements.get("step").onclick();
   assert(elements.get("resultTitle").textContent,"expected the deterministic game to finish");
+  assert.match(elements.get("resultText").textContent,/Seed 1 \| P1 rush vs P2 ranged/);
+  elements.get("copy").onclick();
+  assert.equal(copiedText,elements.get("resultText").textContent);
   assert.equal(elements.get("step").disabled,true);
   assert.equal(elements.get("start").disabled,true);
   assert.equal(elements.get("close").focused,true);
