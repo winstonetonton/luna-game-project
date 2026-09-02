@@ -315,9 +315,12 @@ function runStep(g,ai1="rush",ai2="ranged"){
   g.now+=3;g.tickPoints();g.updateCaptures();if(g.winner||g.drawType)return;
   if(g.checkTimeout())return;
   const phase=Math.floor(g.now/3)+g.seed;
-  const plans=[[Side.P1,planDeploy(g,Side.P1,ai1,phase)],[Side.P2,planDeploy(g,Side.P2,ai2,phase)]];
+  const plans=[[Side.P1,ai1==="human"?null:planDeploy(g,Side.P1,ai1,phase)],[Side.P2,ai2==="human"?null:planDeploy(g,Side.P2,ai2,phase)]];
   for(const [s,p] of plans)if(p)g.addUnit(s,p.kind,p.pos,{spend:true});
-  const acts=g.living().map(u=>[u,chooseAction(g,u,u.side===Side.P1?ai1:ai2,phase)]);
+  const acts=g.living().map(u=>{
+    const controller=u.side===Side.P1?ai1:ai2;
+    return [u,chooseAction(g,u,controller==="human"?"raid":controller,phase)];
+  });
   // Knight first strike
   for(const [u,[a,arg]] of acts)if(a==="knight"&&u.alive){g.knightJump(u,arg&&arg.uid?arg:null);u.nextAction=g.now+3;}
   // Ordinary attacks
