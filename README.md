@@ -13,6 +13,7 @@ Included:
 - fourfold normalized-state repetition draw
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
+- reproducible Seed input plus one-click random games
 
 ## Quality checks
 
@@ -27,3 +28,4 @@ The suite covers the game rules, shared browser-script scope, and the DESTINY / 
 Local preview:
 `python3 -m http.server 8000`
 then open `http://localhost:8000`.
+

@@ -43,12 +43,15 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
       appendChild(child){this.children.push(child)},focus(){this.focused=true}
     };
   };
-  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","step","start","close","ai1","ai2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","random","step","start","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
   let ready,keydown,intervalCallback,cleared=false;
-  const window={addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback;if(type==="keydown")keydown=callback}};
+  const window={
+    crypto:{getRandomValues(values){values[0]=123456789;return values}},
+    addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback;if(type==="keydown")keydown=callback}
+  };
   const document={getElementById(id){return elements.get(id)},createElement(){return makeElement()}};
   const context=vm.createContext({window,document,console,
     setInterval(callback){intervalCallback=callback;return 1},
@@ -59,6 +62,10 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   ready();
   assert.match(elements.get("log").textContent,/DESTINY: Tower/);
   assert.equal(elements.get("board").children.length,40);
+  elements.get("random").onclick();
+  assert.equal(elements.get("seed").value,"123456789");
+  assert.equal(elements.get("time").textContent,0);
+  assert.match(elements.get("log").textContent,/DESTINY: Tower/);
   elements.get("new").onclick();
   assert.equal(elements.get("time").textContent,0);
   elements.get("seed").value="not-a-seed";

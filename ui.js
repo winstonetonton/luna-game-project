@@ -11,6 +11,13 @@ function seedValue(){
   $("seed").value=String(seed);
   return seed;
 }
+function randomGame(){
+  const values=new Uint32Array(1);
+  if(window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(values);
+  else values[0]=Math.floor(Math.random()*0xffffffff)+1;
+  $("seed").value=String(values[0]||1);
+  newGame();
+}
 
 function newGame(){
   stop();
@@ -70,7 +77,7 @@ function render(){
   $("stall").textContent=game.stallState();
 }
 window.addEventListener("DOMContentLoaded",()=>{
-  $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=closeResult;
+  $("new").onclick=newGame;$("random").onclick=randomGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=closeResult;
   newGame();
 });
 window.addEventListener("keydown",event=>{if(event.key==="Escape")closeResult();});
