@@ -49,6 +49,11 @@ function start(){
   $("start").textContent="PAUSE";
 }
 function stop(){if(timer){clearInterval(timer);timer=null;}$("start").textContent="START";}
+function closeResult(){
+  if($("overlay").classList.contains("hidden"))return;
+  $("overlay").classList.add("hidden");
+  $("new").focus();
+}
 function render(){
   $("board").innerHTML="";
   for(let y=0;y<5;y++)for(let x=0;x<8;x++){
@@ -65,8 +70,9 @@ function render(){
   $("stall").textContent=game.stallState();
 }
 window.addEventListener("DOMContentLoaded",()=>{
-  $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=()=>{$("overlay").classList.add("hidden");$("new").focus();};
+  $("new").onclick=newGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=closeResult;
   newGame();
 });
+window.addEventListener("keydown",event=>{if(event.key==="Escape")closeResult();});
 })();
 

@@ -47,8 +47,8 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
-  let ready,intervalCallback,cleared=false;
-  const window={addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback}};
+  let ready,keydown,intervalCallback,cleared=false;
+  const window={addEventListener(type,callback){if(type==="DOMContentLoaded")ready=callback;if(type==="keydown")keydown=callback}};
   const document={getElementById(id){return elements.get(id)},createElement(){return makeElement()}};
   const context=vm.createContext({window,document,console,
     setInterval(callback){intervalCallback=callback;return 1},
@@ -89,7 +89,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert.equal(elements.get("start").disabled,true);
   assert.equal(elements.get("close").focused,true);
   const finalTime=elements.get("time").textContent;
-  elements.get("close").onclick();
+  keydown({key:"Escape"});
   assert.equal(elements.get("new").focused,true);
   elements.get("step").onclick();
   assert.equal(elements.get("time").textContent,finalTime);
