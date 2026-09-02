@@ -48,6 +48,10 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   assert.equal(elements.get("board").children.length,40);
   elements.get("new").onclick();
   assert.equal(elements.get("time").textContent,0);
+  elements.get("seed").value="not-a-seed";
+  elements.get("new").onclick();
+  assert.equal(elements.get("seed").value,"1");
+  assert.match(elements.get("log").textContent,/DESTINY: Tower/);
   elements.get("start").onclick();
   assert.equal(elements.get("start").textContent,"PAUSE");
   assert.equal(elements.get("time").textContent,3);

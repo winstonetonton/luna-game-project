@@ -5,9 +5,16 @@ const {Side,Kind,Game,runStep}=window.LunaGame;
 let game=null,timer=null;
 const $=id=>document.getElementById(id);
 
+function seedValue(){
+  const value=Number($("seed").value);
+  const seed=Number.isSafeInteger(value)&&value>=1&&value<=0xffffffff?value:1;
+  $("seed").value=String(seed);
+  return seed;
+}
+
 function newGame(){
   stop();
-  const seed=parseInt($("seed").value||"1",10);
+  const seed=seedValue();
   game=new Game(seed);
   $("overlay").classList.add("hidden");
   $("log").textContent="";
