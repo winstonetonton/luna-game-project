@@ -1,7 +1,7 @@
 
 (()=>{
 "use strict";
-const {Side,Kind,Game,runStep}=window.LunaGame;
+const {Side,Kind,Game,runStep,MATCH_LIMIT_SECONDS}=window.LunaGame;
 let game=null,timer=null;
 const $=id=>document.getElementById(id);
 
@@ -42,8 +42,8 @@ function step(){
     stop();
     $("step").disabled=true;
     $("start").disabled=true;
-    $("resultTitle").textContent=game.winner?`P${game.winner} VICTORY`:game.drawType.replaceAll("_"," ");
-    $("resultText").textContent=`TIME ${game.now}s / Tower ${game.players[1].towers}-${game.players[2].towers}`;
+    $("resultTitle").textContent=game.winner?`P${game.winner} ${game.winType==="TIMEOUT"?"TIMEOUT ":""}VICTORY`:game.drawType.replaceAll("_"," ");
+    $("resultText").textContent=`TIME ${game.now}s / Tower ${game.players[1].towers}-${game.players[2].towers} / Objectives ${game.objectiveScore(1)}-${game.objectiveScore(2)}`;
     $("overlay").classList.remove("hidden");
     $("close").focus();
   }
@@ -77,6 +77,7 @@ function render(){
   $("stall").textContent=game.stallState();
 }
 window.addEventListener("DOMContentLoaded",()=>{
+  $("limit").textContent=MATCH_LIMIT_SECONDS;
   $("new").onclick=newGame;$("random").onclick=randomGame;$("step").onclick=step;$("start").onclick=start;$("close").onclick=closeResult;
   newGame();
 });

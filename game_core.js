@@ -5,6 +5,7 @@ const W=8, H=5;
 const START_POINTS=4, MAX_POINTS=10, MAX_UNITS=10;
 const ACTION_TICK=3, CAPTURE_SECONDS=3;
 const STALL_WARNING=9, STALL_REEVAL=10, REPETITION_COUNT=4;
+const MATCH_LIMIT_SECONDS=180;
 
 const Side={P1:1,P2:2};
 const Kind={
@@ -53,6 +54,7 @@ class Game{
     this.objectives=[];
     this.lastProgress=0;
     this.winner=null;
+    this.winType=null;
     this.drawType=null;
     this.events=[];
     this.repetition=new Map();
@@ -213,6 +215,16 @@ class Game{
     if(p1&&p2)this.drawType="SIMULTANEOUS_TOWER_DRAW";
     else if(p1)this.winner=Side.P1; else if(p2)this.winner=Side.P2;
   }
+  objectiveScore(side){return this.objectives.filter(o=>o.captured&&o.capSide===side).length;}
+  checkTimeout(){
+    if(this.now<MATCH_LIMIT_SECONDS)return false;
+    const p1=this.objectiveScore(Side.P1),p2=this.objectiveScore(Side.P2);
+    if(p1>p2){this.winner=Side.P1;this.winType="TIMEOUT";}
+    else if(p2>p1){this.winner=Side.P2;this.winType="TIMEOUT";}
+    else this.drawType="TIMEOUT_DRAW";
+    this.log("timeout",{p1Objectives:p1,p2Objectives:p2});
+    return true;
+  }
   stallState(){
     const d=this.now-this.lastProgress;
     return d>=STALL_REEVAL?"REEVALUATE":d>=STALL_WARNING?"WARNING":"NORMAL";
@@ -301,6 +313,7 @@ function chooseAction(g,u,ai,phase){
 function runStep(g,ai1="rush",ai2="ranged"){
   if(g.winner||g.drawType)return;
   g.now+=3;g.tickPoints();g.updateCaptures();if(g.winner||g.drawType)return;
+  if(g.checkTimeout())return;
   const phase=Math.floor(g.now/3)+g.seed;
   const plans=[[Side.P1,planDeploy(g,Side.P1,ai1,phase)],[Side.P2,planDeploy(g,Side.P2,ai2,phase)]];
   for(const [s,p] of plans)if(p)g.addUnit(s,p.kind,p.pos,{spend:true});
@@ -323,6 +336,7 @@ function runStep(g,ai1="rush",ai2="ranged"){
   if(!g.winner&&!g.drawType)g.checkRepetition();
 }
 
-const LunaGame={W,H,Side,Kind,SPECS,Game,runStep,planDeploy,chooseAction};
+const LunaGame={W,H,MATCH_LIMIT_SECONDS,Side,Kind,SPECS,Game,runStep,planDeploy,chooseAction};
 if(typeof module!=="undefined")module.exports=LunaGame;
 if(typeof window!=="undefined")window.LunaGame=LunaGame;
+

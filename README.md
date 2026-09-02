@@ -11,6 +11,7 @@ Included:
 - dynamic Tower victory / simultaneous final-Tower draw
 - 9s warning / 10s re-evaluation state
 - fourfold normalized-state repetition draw
+- 180-second timeout decided by total captured Towers and Outposts
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 - reproducible Seed input plus one-click random games

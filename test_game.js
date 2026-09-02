@@ -3,7 +3,7 @@
 const assert=require("assert");
 const fs=require("fs");
 const vm=require("vm");
-const {Side,Kind,SPECS,Game,runStep}=require("./game_core.js");
+const {Side,Kind,SPECS,MATCH_LIMIT_SECONDS,Game,runStep}=require("./game_core.js");
 
 function test(name,fn){try{fn();console.log("PASS",name)}catch(e){console.error("FAIL",name,e);process.exitCode=1}}
 
@@ -28,6 +28,23 @@ test("Captured objective timers do not prevent repetition",()=>{
 test("Repetition draw fires on fourth identical state",()=>{let g=new Game(5);for(let i=0;i<4;i++)g.checkRepetition();assert.equal(g.drawType,"REPETITION_DRAW")});
 test("Full engine steps without exception",()=>{let g=new Game(12);for(let i=0;i<20&&!g.winner&&!g.drawType;i++)runStep(g,"rush","ranged");assert(g.now>0)});
 test("Stalled games can terminate by repetition",()=>{let g=new Game(11);for(let i=0;i<500&&!g.winner&&!g.drawType;i++)runStep(g,"raid","raid");assert.equal(g.drawType,"REPETITION_DRAW")});
+test("Timeout awards the side with more captured objectives",()=>{
+  const g=new Game(1);
+  g.objectives[0].captured=true;g.objectives[0].capSide=Side.P1;
+  g.objectives[1].captured=true;g.objectives[1].capSide=Side.P1;
+  g.objectives[2].captured=true;g.objectives[2].capSide=Side.P2;
+  g.now=MATCH_LIMIT_SECONDS-3;runStep(g);
+  assert.equal(g.now,MATCH_LIMIT_SECONDS);
+  assert.equal(g.winner,Side.P1);assert.equal(g.winType,"TIMEOUT");
+  assert.equal(g.events.at(-1).event,"timeout");
+});
+test("Timeout is a draw when captured objective counts match",()=>{
+  const g=new Game(1);
+  g.objectives[0].captured=true;g.objectives[0].capSide=Side.P1;
+  g.objectives[1].captured=true;g.objectives[1].capSide=Side.P2;
+  g.now=MATCH_LIMIT_SECONDS-3;runStep(g);
+  assert.equal(g.drawType,"TIMEOUT_DRAW");
+});
 test("Browser scripts share a page without global declaration collisions",()=>{
   const context=vm.createContext({window:{addEventListener(){}},console,setInterval,clearInterval});
   vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
@@ -43,7 +60,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
       appendChild(child){this.children.push(child)},focus(){this.focused=true}
     };
   };
-  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","p1","p2","towers","score","stall","new","random","step","start","close","ai1","ai2"]){
+  for(const id of ["seed","overlay","resultTitle","resultText","log","board","time","limit","p1","p2","towers","score","stall","new","random","step","start","close","ai1","ai2"]){
     elements.set(id,makeElement());
   }
   elements.get("seed").value="7";elements.get("ai1").value="rush";elements.get("ai2").value="ranged";
@@ -60,6 +77,7 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
   vm.runInContext(fs.readFileSync("./ui.js","utf8"),context,{filename:"ui.js"});
   ready();
+  assert.equal(elements.get("limit").textContent,MATCH_LIMIT_SECONDS);
   assert.match(elements.get("log").textContent,/DESTINY: Tower/);
   assert.equal(elements.get("board").children.length,40);
   elements.get("random").onclick();
