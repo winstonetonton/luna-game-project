@@ -224,7 +224,9 @@ class Game{
     ]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
     const players=[[1,this.players[1].points,this.players[1].towers],[2,this.players[2].points,this.players[2].towers]];
     const objectives=this.objectives.map(o=>[
-      o.side,o.lane,o.kind,o.captured?1:0,o.capSide||0,o.capStart===null?-1:Math.max(0,this.now-o.capStart)
+      o.side,o.lane,o.kind,o.captured?1:0,
+      o.captured?0:(o.capSide||0),
+      o.captured||o.capStart===null?-1:Math.max(0,this.now-o.capStart)
     ]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
     return JSON.stringify([this.towerCount,players,objectives,units]);
   }

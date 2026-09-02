@@ -17,8 +17,17 @@ test("Knight first-strike landing",()=>{let g=new Game(1);let k=g.addUnit(1,Kind
 test("Archer kill does not advance",()=>{let g=new Game(1);let a=g.addUnit(1,Kind.ARCHER,[1,2],{spend:false,ready:true});let e=g.addUnit(2,Kind.PAWN,[2,2],{spend:false,ready:true});g.resolveAttacks([[a,e]]);assert(!e.alive);assert.deepStrictEqual(a.pos,[1,2])});
 test("Melee kill advances",()=>{let g=new Game(1);let a=g.addUnit(1,Kind.ROOK,[2,2],{spend:false,ready:true});let e=g.addUnit(2,Kind.PAWN,[3,2],{spend:false,ready:true});g.resolveAttacks([[a,e]]);assert.deepStrictEqual(a.pos,[3,2])});
 test("Signature ignores UID",()=>{let a=new Game(5),b=new Game(5);a.addUnit(1,Kind.PAWN,[1,2],{spend:false,ready:true});b.nextUid=50;b.addUnit(1,Kind.PAWN,[1,2],{spend:false,ready:true});assert.equal(a.normalizedSignature(),b.normalizedSignature())});
+test("Captured objective timers do not prevent repetition",()=>{
+  const g=new Game(5),o=g.objectives[0];
+  o.captured=true;o.capSide=2;o.capStart=3;
+  g.now=6;const first=g.normalizedSignature();
+  g.now=60;assert.equal(g.normalizedSignature(),first);
+  for(let i=0;i<4;i++)g.checkRepetition();
+  assert.equal(g.drawType,"REPETITION_DRAW");
+});
 test("Repetition draw fires on fourth identical state",()=>{let g=new Game(5);for(let i=0;i<4;i++)g.checkRepetition();assert.equal(g.drawType,"REPETITION_DRAW")});
 test("Full engine steps without exception",()=>{let g=new Game(12);for(let i=0;i<20&&!g.winner&&!g.drawType;i++)runStep(g,"rush","ranged");assert(g.now>0)});
+test("Stalled games can terminate by repetition",()=>{let g=new Game(11);for(let i=0;i<500&&!g.winner&&!g.drawType;i++)runStep(g,"raid","raid");assert.equal(g.drawType,"REPETITION_DRAW")});
 test("Browser scripts share a page without global declaration collisions",()=>{
   const context=vm.createContext({window:{addEventListener(){}},console,setInterval,clearInterval});
   vm.runInContext(fs.readFileSync("./game_core.js","utf8"),context,{filename:"game_core.js"});
