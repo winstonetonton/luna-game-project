@@ -1,0 +1,14 @@
+{
+  "name": "LunaGame.Client",
+  "rootNamespace": "LunaGame.Client",
+  "references": ["LunaGame.Core", "Unity.ugui"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

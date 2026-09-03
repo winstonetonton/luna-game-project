@@ -149,5 +149,19 @@ namespace LunaGame.Core.Tests
             Assert.That(second.Game.ObjectiveScore(Side.P1), Is.EqualTo(first.Game.ObjectiveScore(Side.P1)));
             Assert.That(second.Game.ObjectiveScore(Side.P2), Is.EqualTo(first.Game.ObjectiveScore(Side.P2)));
         }
+
+        [Test]
+        public void HumanControllerDeploysAndMovesWithoutCpuTakingOver()
+        {
+            var runner = new MatchRunner(7u, AiStyle.Rush, AiStyle.Defense, Side.P1);
+
+            Assert.That(runner.TryHumanDeploy(UnitKind.Pawn, new BoardPosition(7, 0)), Is.False);
+            Assert.That(runner.TryHumanDeploy(UnitKind.Pawn, new BoardPosition(0, 0)), Is.True);
+            var pawn = runner.Game.UnitAt(new BoardPosition(0, 0));
+            runner.Step();
+
+            Assert.That(pawn.Position, Is.EqualTo(new BoardPosition(0, 0)));
+            Assert.That(runner.TryHumanAction(pawn, new BoardPosition(1, 0)), Is.True);
+        }
     }
 }

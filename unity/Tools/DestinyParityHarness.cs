@@ -21,6 +21,7 @@ internal static class DestinyParityHarness
             VerifyMatchRules();
             VerifyCombatRules();
             VerifyCpuMatches();
+            VerifyHumanControls();
             Console.WriteLine("PASS Unity C# core: 10,000 Seeds match game_core.js; combat and all 16 CPU pairings verified");
             return 0;
         }
@@ -103,6 +104,18 @@ internal static class DestinyParityHarness
         var second = new MatchRunner(424242u, AiStyle.Raid, AiStyle.Defense);
         first.RunToCompletion(); second.RunToCompletion();
         Equal(MatchFingerprint(first.Game), MatchFingerprint(second.Game), "CPU match determinism");
+    }
+
+    private static void VerifyHumanControls()
+    {
+        var runner = new MatchRunner(7u, AiStyle.Rush, AiStyle.Defense, Side.P1);
+        Equal(false, runner.TryHumanDeploy(UnitKind.Pawn, new BoardPosition(7, 0)), "Human cannot deploy in enemy territory");
+        Equal(true, runner.TryHumanDeploy(UnitKind.Pawn, new BoardPosition(0, 0)), "Human tap deployment");
+        var pawn = runner.Game.UnitAt(new BoardPosition(0, 0));
+        runner.Step();
+        Equal(new BoardPosition(0, 0), pawn.Position, "Human unit is not controlled by CPU");
+        Equal(true, runner.TryHumanAction(pawn, new BoardPosition(1, 0)), "Human tap movement");
+        Equal(new BoardPosition(1, 0), pawn.Position, "Human movement destination");
     }
 
     private static string MatchFingerprint(MatchGame game)

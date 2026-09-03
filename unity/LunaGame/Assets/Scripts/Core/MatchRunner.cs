@@ -27,12 +27,13 @@ namespace LunaGame.Core
 
     public sealed class MatchRunner
     {
-        public MatchRunner(uint seed, AiStyle p1 = AiStyle.Rush, AiStyle p2 = AiStyle.Ranged)
-        { Game = new MatchGame(seed); P1Style = p1; P2Style = p2; }
+        public MatchRunner(uint seed, AiStyle p1 = AiStyle.Rush, AiStyle p2 = AiStyle.Ranged, Side? humanSide = null)
+        { Game = new MatchGame(seed); P1Style = p1; P2Style = p2; HumanSide = humanSide; }
 
         public MatchGame Game { get; }
         public AiStyle P1Style { get; }
         public AiStyle P2Style { get; }
+        public Side? HumanSide { get; }
         public bool Finished => Game.Winner.HasValue || Game.DrawType != null;
 
         public void Step()
@@ -42,10 +43,12 @@ namespace LunaGame.Core
             if (Finished) return;
             var phase = Game.Now / MatchGame.ActionTick + (int)Game.Seed;
 
-            Deploy(Side.P1, P1Style, phase);
-            Deploy(Side.P2, P2Style, phase);
+            if (HumanSide != Side.P1) Deploy(Side.P1, P1Style, phase);
+            if (HumanSide != Side.P2) Deploy(Side.P2, P2Style, phase);
 
-            var actions = Game.Living().Select(unit => ChooseAction(unit, Style(unit.Side), phase)).ToArray();
+            var actions = Game.Living()
+                .Where(unit => HumanSide != unit.Side)
+                .Select(unit => ChooseAction(unit, Style(unit.Side), phase)).ToArray();
             foreach (var action in actions.Where(action => action.Kind == CpuActionKind.Knight && action.Unit.Alive))
                 Game.KnightJump(action.Unit);
 
@@ -57,6 +60,43 @@ namespace LunaGame.Core
                 .Where(action => action.Kind == CpuActionKind.Move && action.Destination.HasValue)
                 .Select(action => new MoveOrder(action.Unit, action.Destination.Value)));
             Game.ResolveObjectives();
+        }
+
+        public bool TryHumanDeploy(UnitKind kind, BoardPosition position)
+        {
+            if (Finished || !HumanSide.HasValue || !Game.SpawnCells(HumanSide.Value).Contains(position) ||
+                Game.Player(HumanSide.Value).Points < MatchGame.Specs[kind].Cost) return false;
+            Game.AddUnit(HumanSide.Value, kind, position);
+            return true;
+        }
+
+        public bool TryHumanAction(MatchUnit unit, BoardPosition destination)
+        {
+            if (Finished || !HumanSide.HasValue || unit == null || !unit.Alive || unit.Locked || unit.Side != HumanSide.Value)
+                return false;
+            var target = Game.UnitAt(destination);
+            var forward = unit.Side == Side.P1 ? 1 : -1;
+            if (unit.Kind == UnitKind.Knight && Game.Now >= unit.NextAction &&
+                destination.Equals(new BoardPosition(unit.Position.X + 2 * forward, unit.Position.Y)) &&
+                (target == null || target.Side != unit.Side))
+            {
+                Game.KnightJump(unit);
+                Game.ResolveObjectives();
+                return true;
+            }
+            if (target != null && target.Side != unit.Side && Game.Now >= unit.NextAttack && Game.Attackables(unit).Contains(target))
+            {
+                Game.ResolveAttacks(new[] { new AttackOrder(unit, target) });
+                Game.ResolveObjectives();
+                return true;
+            }
+            if (Game.Now >= unit.NextAction && Game.LegalMoves(unit).Contains(destination))
+            {
+                Game.Move(unit, destination);
+                Game.ResolveObjectives();
+                return true;
+            }
+            return false;
         }
 
         public void RunToCompletion(int maximumSteps = 100)
