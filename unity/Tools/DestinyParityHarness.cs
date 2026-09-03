@@ -19,6 +19,7 @@ internal static class DestinyParityHarness
             VerifyFixture(1327u, 4, "0,1,2,4", "0,1,2,3");
             VerifyFirstTenThousandSeeds();
             VerifyMatchRules();
+            VerifyCombatRules();
             Console.WriteLine("PASS Unity C# Destiny parity: 10,000 Seeds match game_core.js");
             return 0;
         }
@@ -50,6 +51,38 @@ internal static class DestinyParityHarness
         for (var i = 0; i < MatchGame.MatchLimitSeconds / MatchGame.ActionTick; i++) timeout.AdvanceTick();
         Equal(Side.P1, timeout.Winner.Value, "Timeout objective majority");
         Equal("TIMEOUT", timeout.WinType, "Timeout win type");
+    }
+
+    private static void VerifyCombatRules()
+    {
+        var melee = new MatchGame(36u);
+        var attacker = melee.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(3, 2), spend: false, ready: true);
+        var defender = melee.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 2), spend: false, ready: true);
+        melee.ResolveAttacks(new[] { new AttackOrder(attacker, defender) });
+        Equal(false, defender.Alive, "Melee target dies");
+        Equal(new BoardPosition(4, 2), attacker.Position, "Melee attacker advances");
+
+        var ranged = new MatchGame(36u);
+        var archer = ranged.AddUnit(Side.P1, UnitKind.Archer, new BoardPosition(3, 2), spend: false, ready: true);
+        var rangedTarget = ranged.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(5, 2), spend: false, ready: true);
+        ranged.ResolveAttacks(new[] { new AttackOrder(archer, rangedTarget) });
+        Equal(false, rangedTarget.Alive, "Archer target dies");
+        Equal(new BoardPosition(3, 2), archer.Position, "Archer does not advance");
+        Equal(6, archer.NextAttack, "Archer cooldown");
+
+        var simultaneous = new MatchGame(36u);
+        var p1 = simultaneous.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(3, 2), spend: false, ready: true);
+        var p2 = simultaneous.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 2), spend: false, ready: true);
+        simultaneous.ResolveAttacks(new[] { new AttackOrder(p1, p2), new AttackOrder(p2, p1) });
+        Equal(false, p1.Alive, "Simultaneous P1 death");
+        Equal(false, p2.Alive, "Simultaneous P2 death");
+
+        var knightGame = new MatchGame(36u);
+        var knight = knightGame.AddUnit(Side.P1, UnitKind.Knight, new BoardPosition(2, 1), spend: false, ready: true);
+        var landingTarget = knightGame.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 1), spend: false, ready: true);
+        knightGame.KnightJump(knight);
+        Equal(false, landingTarget.Alive, "Knight first strike");
+        Equal(new BoardPosition(4, 1), knight.Position, "Knight lands after kill");
     }
 
     private static void VerifyFixture(

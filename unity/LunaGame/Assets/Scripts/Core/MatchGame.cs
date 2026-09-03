@@ -51,6 +51,14 @@ namespace LunaGame.Core
         public int Towers { get; internal set; }
     }
 
+    public sealed class AttackOrder
+    {
+        public AttackOrder(MatchUnit attacker, MatchUnit target)
+        { Attacker = attacker; Target = target; }
+        public MatchUnit Attacker { get; }
+        public MatchUnit Target { get; }
+    }
+
     public sealed class MatchGame
     {
         public const int Width = 8;
@@ -137,6 +145,107 @@ namespace LunaGame.Core
             else if (unit.Kind == UnitKind.Rook)
                 foreach (var direction in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) AddRay(unit, candidates, direction.Item1, direction.Item2, 5);
             return candidates.Where(position => InBounds(position) && UnitAt(position) == null).ToArray();
+        }
+
+        public IReadOnlyList<MatchUnit> Attackables(MatchUnit unit)
+        {
+            if (!unit.Alive || unit.Locked) return Array.Empty<MatchUnit>();
+            var x = unit.Position.X; var y = unit.Position.Y;
+            var forward = unit.Side == Side.P1 ? 1 : -1;
+            return Living().Where(enemy =>
+            {
+                if (enemy.Side == unit.Side) return false;
+                var dx = enemy.Position.X - x; var dy = enemy.Position.Y - y;
+                if (unit.Kind == UnitKind.Pawn || unit.Kind == UnitKind.Silver) return dx == forward && dy == 0;
+                if (unit.Kind == UnitKind.Gold) return Math.Max(Math.Abs(dx), Math.Abs(dy)) == 1;
+                if (unit.Kind == UnitKind.Knight) return false;
+                if (unit.Kind == UnitKind.Lance) return dx == forward && Math.Abs(dy) <= 1;
+                if (unit.Kind == UnitKind.Archer) return Math.Abs(dx) + Math.Abs(dy) > 0 && Math.Abs(dx) + Math.Abs(dy) <= 2;
+                if (unit.Kind == UnitKind.Bishop) return Math.Abs(dx) == 1 && Math.Abs(dy) == 1;
+                return unit.Kind == UnitKind.Rook &&
+                    ((Math.Abs(dx) == 1 && dy == 0) || (Math.Abs(dy) == 1 && dx == 0));
+            }).ToArray();
+        }
+
+        public MatchUnit SelectTarget(MatchUnit attacker, IEnumerable<MatchUnit> enemies)
+        {
+            return enemies
+                .OrderBy(enemy => (double)enemy.Hp / Specs[enemy.Kind].Hp)
+                .ThenBy(enemy => attacker.Side == Side.P1 ? enemy.Position.X : Width - 1 - enemy.Position.X)
+                .ThenBy(enemy => Math.Abs(enemy.Position.X - attacker.Position.X) + Math.Abs(enemy.Position.Y - attacker.Position.Y))
+                .ThenBy(enemy => enemy.Uid)
+                .FirstOrDefault();
+        }
+
+        public MatchUnit KnightLandingTarget(MatchUnit unit)
+        {
+            if (!unit.Alive || unit.Kind != UnitKind.Knight) return null;
+            var forward = unit.Side == Side.P1 ? 1 : -1;
+            var landing = new BoardPosition(unit.Position.X + 2 * forward, unit.Position.Y);
+            if (!InBounds(landing)) return null;
+            var occupant = UnitAt(landing);
+            return occupant != null && occupant.Side != unit.Side ? occupant : null;
+        }
+
+        public void KnightJump(MatchUnit unit)
+        {
+            if (!unit.Alive || unit.Locked || unit.Kind != UnitKind.Knight) throw new InvalidOperationException("not a movable knight");
+            if (Now < unit.NextAction) throw new InvalidOperationException("not ready");
+            var forward = unit.Side == Side.P1 ? 1 : -1;
+            var landing = new BoardPosition(unit.Position.X + 2 * forward, unit.Position.Y);
+            if (!InBounds(landing)) throw new InvalidOperationException("illegal jump");
+            var occupant = UnitAt(landing);
+            if (occupant != null && occupant.Side == unit.Side) throw new InvalidOperationException("occupied");
+            if (occupant != null)
+            {
+                occupant.Hp -= Specs[unit.Kind].Attack;
+                if (occupant.Hp <= 0)
+                {
+                    occupant.Alive = false;
+                    unit.Position = landing;
+                    StartCapture(unit);
+                }
+            }
+            else
+            {
+                unit.Position = landing;
+                StartCapture(unit);
+            }
+            unit.NextAction = Now + ActionTick;
+        }
+
+        public void ResolveAttacks(IEnumerable<AttackOrder> orders)
+        {
+            var positions = units.ToDictionary(unit => unit.Uid, unit => unit.Position);
+            var damage = new Dictionary<int, int>();
+            var valid = new List<AttackOrder>();
+            foreach (var order in orders)
+            {
+                if (!order.Attacker.Alive || !order.Target.Alive || Now < order.Attacker.NextAttack ||
+                    !Attackables(order.Attacker).Contains(order.Target)) continue;
+                damage[order.Target.Uid] = (damage.TryGetValue(order.Target.Uid, out var current) ? current : 0) + Specs[order.Attacker.Kind].Attack;
+                order.Attacker.NextAttack = Now + Specs[order.Attacker.Kind].Cooldown;
+                order.Attacker.NextAction = Now + ActionTick;
+                valid.Add(order);
+            }
+            var dead = new HashSet<int>();
+            foreach (var entry in damage)
+            {
+                var target = units.First(unit => unit.Uid == entry.Key);
+                target.Hp -= entry.Value;
+                if (target.Hp <= 0) dead.Add(target.Uid);
+            }
+            foreach (var uid in dead) units.First(unit => unit.Uid == uid).Alive = false;
+
+            foreach (var claim in valid
+                .Where(order => order.Attacker.Alive && dead.Contains(order.Target.Uid) && !Specs[order.Attacker.Kind].Ranged)
+                .GroupBy(order => positions[order.Target.Uid]))
+            {
+                if (UnitAt(claim.Key) != null) continue;
+                var winner = claim.OrderBy(order => order.Attacker.Uid).First().Attacker;
+                winner.Position = claim.Key;
+                StartCapture(winner);
+            }
         }
 
         public void Move(MatchUnit unit, BoardPosition destination)

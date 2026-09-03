@@ -75,5 +75,49 @@ namespace LunaGame.Core.Tests
             Assert.That(game.Winner, Is.EqualTo(Side.P1));
             Assert.That(game.WinType, Is.EqualTo("TIMEOUT"));
         }
+
+        [Test]
+        public void SimultaneousMeleeAttacksCanKillBothUnits()
+        {
+            var game = new MatchGame(36u);
+            var p1 = game.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(3, 2), false, true);
+            var p2 = game.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 2), false, true);
+
+            game.ResolveAttacks(new[] { new AttackOrder(p1, p2), new AttackOrder(p2, p1) });
+
+            Assert.That(p1.Alive, Is.False);
+            Assert.That(p2.Alive, Is.False);
+        }
+
+        [Test]
+        public void MeleeAdvancesAfterKillButArcherDoesNot()
+        {
+            var melee = new MatchGame(36u);
+            var pawn = melee.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(3, 2), false, true);
+            var pawnTarget = melee.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 2), false, true);
+            melee.ResolveAttacks(new[] { new AttackOrder(pawn, pawnTarget) });
+
+            var ranged = new MatchGame(36u);
+            var archer = ranged.AddUnit(Side.P1, UnitKind.Archer, new BoardPosition(3, 2), false, true);
+            var archerTarget = ranged.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(5, 2), false, true);
+            ranged.ResolveAttacks(new[] { new AttackOrder(archer, archerTarget) });
+
+            Assert.That(pawn.Position, Is.EqualTo(new BoardPosition(4, 2)));
+            Assert.That(archer.Position, Is.EqualTo(new BoardPosition(3, 2)));
+            Assert.That(archer.NextAttack, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void KnightFirstStrikeLandsOnlyAfterKill()
+        {
+            var game = new MatchGame(36u);
+            var knight = game.AddUnit(Side.P1, UnitKind.Knight, new BoardPosition(2, 1), false, true);
+            var target = game.AddUnit(Side.P2, UnitKind.Pawn, new BoardPosition(4, 1), false, true);
+
+            game.KnightJump(knight);
+
+            Assert.That(target.Alive, Is.False);
+            Assert.That(knight.Position, Is.EqualTo(new BoardPosition(4, 1)));
+        }
     }
 }

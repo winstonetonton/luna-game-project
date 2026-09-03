@@ -31,7 +31,7 @@ The suite covers the game rules, shared browser-script scope, and the DESTINY / 
 
 ## Unity production client
 
-The Google Play production client lives in `unity/LunaGame`. Its current core ports deterministic RNG and Destiny generation plus the 8x5 board, eight unit movement sets, deployment costs, three-second objective capture, Tower victory, and the 180-second objective-majority timeout. A headless parity harness compiles the same production C# files and checks 10,000 shared Seeds in GitHub Actions.
+The Google Play production client lives in `unity/LunaGame`. Its current core ports deterministic RNG and Destiny generation plus the 8x5 board, eight unit movement and attack sets, simultaneous damage, melee capture-advance, Archer ranged combat, Knight first strike, deployment costs, three-second objective capture, Tower victory, and the 180-second objective-majority timeout. A headless parity harness compiles the same production C# files and checks 10,000 shared Seeds in GitHub Actions.
 
 Local preview:
 `python3 -m http.server 8000`
