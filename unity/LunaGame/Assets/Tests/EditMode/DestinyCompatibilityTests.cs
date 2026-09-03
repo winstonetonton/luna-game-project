@@ -46,6 +46,34 @@ namespace LunaGame.Core.Tests
                 Assert.That(game.TowerLanes(Side.P2).Distinct().Count(), Is.EqualTo(game.TowerCount));
             }
         }
+
+        [Test]
+        public void PawnMovesForwardAndCapturesEnemyTowerAfterThreeSeconds()
+        {
+            var game = new MatchGame(1u);
+            var target = game.Objectives.First(o => o.Side == Side.P2 && o.Kind == ObjectiveKind.Tower);
+            var unit = game.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(6, target.Lane), false, true);
+
+            game.Move(unit, new BoardPosition(7, target.Lane));
+            game.AdvanceTick();
+
+            Assert.That(target.Captured, Is.True);
+            Assert.That(unit.Locked, Is.True);
+            Assert.That(game.Winner, Is.EqualTo(Side.P1));
+        }
+
+        [Test]
+        public void TimeoutUsesAllCapturedObjectivesNotOnlyTowers()
+        {
+            var game = new MatchGame(1327u);
+            var outpost = game.Objectives.First(o => o.Side == Side.P2 && o.Kind == ObjectiveKind.Outpost);
+            var unit = game.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(6, outpost.Lane), false, true);
+            game.Move(unit, new BoardPosition(7, outpost.Lane));
+
+            for (var i = 0; i < MatchGame.MatchLimitSeconds / MatchGame.ActionTick; i++) game.AdvanceTick();
+
+            Assert.That(game.Winner, Is.EqualTo(Side.P1));
+            Assert.That(game.WinType, Is.EqualTo("TIMEOUT"));
+        }
     }
 }
-

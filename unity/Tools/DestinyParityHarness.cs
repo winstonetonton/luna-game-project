@@ -18,6 +18,7 @@ internal static class DestinyParityHarness
             VerifyFixture(682u, 3, "1,2,4", "0,3,4");
             VerifyFixture(1327u, 4, "0,1,2,4", "0,1,2,3");
             VerifyFirstTenThousandSeeds();
+            VerifyMatchRules();
             Console.WriteLine("PASS Unity C# Destiny parity: 10,000 Seeds match game_core.js");
             return 0;
         }
@@ -26,6 +27,29 @@ internal static class DestinyParityHarness
             Console.Error.WriteLine("FAIL " + error);
             return 1;
         }
+    }
+
+    private static void VerifyMatchRules()
+    {
+        var movement = new MatchGame(1u);
+        var pawn = movement.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(3, 2), spend: false, ready: true);
+        Equal("4,2", string.Join(";", movement.LegalMoves(pawn)), "Pawn movement");
+
+        var capture = new MatchGame(1u);
+        var target = capture.Objectives.First(o => o.Side == Side.P2 && o.Kind == ObjectiveKind.Tower);
+        var unit = capture.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(6, target.Lane), spend: false, ready: true);
+        capture.Move(unit, new BoardPosition(7, target.Lane));
+        capture.AdvanceTick();
+        Equal(true, target.Captured, "Tower captured after three seconds");
+        Equal(Side.P1, capture.Winner.Value, "All Destiny towers win the match");
+
+        var timeout = new MatchGame(1327u);
+        var outpost = timeout.Objectives.First(o => o.Side == Side.P2 && o.Kind == ObjectiveKind.Outpost);
+        var scout = timeout.AddUnit(Side.P1, UnitKind.Pawn, new BoardPosition(6, outpost.Lane), spend: false, ready: true);
+        timeout.Move(scout, new BoardPosition(7, outpost.Lane));
+        for (var i = 0; i < MatchGame.MatchLimitSeconds / MatchGame.ActionTick; i++) timeout.AdvanceTick();
+        Equal(Side.P1, timeout.Winner.Value, "Timeout objective majority");
+        Equal("TIMEOUT", timeout.WinType, "Timeout win type");
     }
 
     private static void VerifyFixture(
@@ -75,4 +99,3 @@ internal static class DestinyParityHarness
         }
     }
 }
-

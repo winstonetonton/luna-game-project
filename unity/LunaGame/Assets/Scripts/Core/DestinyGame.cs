@@ -28,6 +28,10 @@ namespace LunaGame.Core
         public Side Side { get; }
         public int Lane { get; }
         public ObjectiveKind Kind { get; }
+        public int X => Side == Side.P1 ? 0 : MatchGame.Width - 1;
+        public bool Captured { get; internal set; }
+        public Side? CaptureSide { get; internal set; }
+        public int? CaptureStart { get; internal set; }
     }
 
     /// <summary>
@@ -122,4 +126,3 @@ namespace LunaGame.Core
         }
     }
 }
-

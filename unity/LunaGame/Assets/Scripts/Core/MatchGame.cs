@@ -1,0 +1,209 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LunaGame.Core
+{
+    public enum UnitKind { Pawn, Gold, Silver, Knight, Lance, Archer, Bishop, Rook }
+
+    public readonly struct BoardPosition : IEquatable<BoardPosition>
+    {
+        public BoardPosition(int x, int y) { X = x; Y = y; }
+        public int X { get; }
+        public int Y { get; }
+        public bool Equals(BoardPosition other) => X == other.X && Y == other.Y;
+        public override bool Equals(object value) => value is BoardPosition other && Equals(other);
+        public override int GetHashCode() => (X * 397) ^ Y;
+        public override string ToString() => $"{X},{Y}";
+    }
+
+    public sealed class UnitSpec
+    {
+        public UnitSpec(int cost, int hp, int attack, int cooldown, int range, bool ranged)
+        { Cost = cost; Hp = hp; Attack = attack; Cooldown = cooldown; Range = range; Ranged = ranged; }
+        public int Cost { get; }
+        public int Hp { get; }
+        public int Attack { get; }
+        public int Cooldown { get; }
+        public int Range { get; }
+        public bool Ranged { get; }
+    }
+
+    public sealed class MatchUnit
+    {
+        internal MatchUnit(int uid, Side side, UnitKind kind, BoardPosition position, int hp, int readyAt)
+        { Uid = uid; Side = side; Kind = kind; Position = position; Hp = hp; NextAction = readyAt; NextAttack = readyAt; Alive = true; }
+        public int Uid { get; }
+        public Side Side { get; }
+        public UnitKind Kind { get; }
+        public BoardPosition Position { get; internal set; }
+        public int Hp { get; internal set; }
+        public int NextAction { get; internal set; }
+        public int NextAttack { get; internal set; }
+        public bool Alive { get; internal set; }
+        public bool Locked { get; internal set; }
+    }
+
+    public sealed class MatchPlayer
+    {
+        internal MatchPlayer() { Points = MatchGame.StartPoints; }
+        public int Points { get; internal set; }
+        public int Towers { get; internal set; }
+    }
+
+    public sealed class MatchGame
+    {
+        public const int Width = 8;
+        public const int Height = 5;
+        public const int StartPoints = 4;
+        public const int MaxPoints = 10;
+        public const int MaxUnits = 10;
+        public const int ActionTick = 3;
+        public const int CaptureSeconds = 3;
+        public const int MatchLimitSeconds = 180;
+
+        public static readonly IReadOnlyDictionary<UnitKind, UnitSpec> Specs =
+            new Dictionary<UnitKind, UnitSpec>
+            {
+                [UnitKind.Pawn] = new UnitSpec(1, 1, 1, 3, 1, false),
+                [UnitKind.Gold] = new UnitSpec(3, 3, 1, 3, 1, false),
+                [UnitKind.Silver] = new UnitSpec(3, 3, 1, 3, 1, false),
+                [UnitKind.Knight] = new UnitSpec(2, 1, 1, 3, 1, false),
+                [UnitKind.Lance] = new UnitSpec(2, 1, 1, 3, 1, false),
+                [UnitKind.Archer] = new UnitSpec(3, 2, 1, 6, 2, true),
+                [UnitKind.Bishop] = new UnitSpec(4, 2, 1, 3, 1, false),
+                [UnitKind.Rook] = new UnitSpec(4, 2, 2, 3, 1, false)
+            };
+
+        private readonly List<MatchUnit> units = new List<MatchUnit>();
+        private readonly Dictionary<Side, MatchPlayer> players = new Dictionary<Side, MatchPlayer>
+        { [Side.P1] = new MatchPlayer(), [Side.P2] = new MatchPlayer() };
+        private int nextUid = 1;
+
+        public MatchGame(uint seed)
+        {
+            var destiny = new DestinyGame(seed);
+            Seed = destiny.Seed;
+            TowerCount = destiny.TowerCount;
+            Objectives = destiny.Objectives.Select(o => new Objective(o.Side, o.Lane, o.Kind)).ToArray();
+        }
+
+        public uint Seed { get; }
+        public int TowerCount { get; }
+        public int Now { get; private set; }
+        public Side? Winner { get; private set; }
+        public string WinType { get; private set; }
+        public string DrawType { get; private set; }
+        public IReadOnlyList<Objective> Objectives { get; }
+        public IReadOnlyList<MatchUnit> Units => units;
+        public MatchPlayer Player(Side side) => players[side];
+
+        public MatchUnit UnitAt(BoardPosition position) => units.FirstOrDefault(u => u.Alive && u.Position.Equals(position));
+        public IEnumerable<MatchUnit> Living(Side? side = null) => units.Where(u => u.Alive && (!side.HasValue || u.Side == side.Value));
+
+        public MatchUnit AddUnit(Side side, UnitKind kind, BoardPosition position, bool spend = true, bool ready = false)
+        {
+            if (!InBounds(position)) throw new ArgumentOutOfRangeException(nameof(position));
+            if (UnitAt(position) != null) throw new InvalidOperationException("occupied");
+            if (Living(side).Count() >= MaxUnits) throw new InvalidOperationException("cap");
+            var spec = Specs[kind];
+            if (spend)
+            {
+                if (players[side].Points < spec.Cost) throw new InvalidOperationException("points");
+                players[side].Points -= spec.Cost;
+            }
+            var readyAt = ready ? Now : Now + ActionTick;
+            var unit = new MatchUnit(nextUid++, side, kind, position, spec.Hp, readyAt);
+            units.Add(unit);
+            return unit;
+        }
+
+        public IReadOnlyList<BoardPosition> LegalMoves(MatchUnit unit)
+        {
+            if (!unit.Alive || unit.Locked) return Array.Empty<BoardPosition>();
+            var candidates = new List<BoardPosition>();
+            var x = unit.Position.X; var y = unit.Position.Y; var forward = unit.Side == Side.P1 ? 1 : -1;
+            if (unit.Kind == UnitKind.Pawn || unit.Kind == UnitKind.Silver || unit.Kind == UnitKind.Archer)
+                candidates.Add(new BoardPosition(x + forward, y));
+            else if (unit.Kind == UnitKind.Gold)
+                for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++)
+                    if (dx != 0 || dy != 0) candidates.Add(new BoardPosition(x + dx, y + dy));
+            else if (unit.Kind == UnitKind.Knight)
+                candidates.Add(new BoardPosition(x + 2 * forward, y));
+            else if (unit.Kind == UnitKind.Lance)
+                AddRay(unit, candidates, forward, 0, 2);
+            else if (unit.Kind == UnitKind.Bishop)
+                foreach (var direction in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) }) AddRay(unit, candidates, direction.Item1, direction.Item2, 5);
+            else if (unit.Kind == UnitKind.Rook)
+                foreach (var direction in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) AddRay(unit, candidates, direction.Item1, direction.Item2, 5);
+            return candidates.Where(position => InBounds(position) && UnitAt(position) == null).ToArray();
+        }
+
+        public void Move(MatchUnit unit, BoardPosition destination)
+        {
+            if (Now < unit.NextAction) throw new InvalidOperationException("not ready");
+            if (!LegalMoves(unit).Contains(destination)) throw new InvalidOperationException("illegal move");
+            unit.Position = destination;
+            unit.NextAction = Now + ActionTick;
+            StartCapture(unit);
+        }
+
+        public void AdvanceTick()
+        {
+            if (Winner.HasValue || DrawType != null) return;
+            Now += ActionTick;
+            foreach (var player in players.Values) player.Points = Math.Min(MaxPoints, player.Points + 1);
+            UpdateCaptures();
+            if (!Winner.HasValue && DrawType == null) CheckTimeout();
+        }
+
+        public int ObjectiveScore(Side side) => Objectives.Count(o => o.Captured && o.CaptureSide == side);
+
+        private void StartCapture(MatchUnit unit)
+        {
+            var objective = Objectives.FirstOrDefault(o => o.X == unit.Position.X && o.Lane == unit.Position.Y && !o.Captured && o.Side != unit.Side);
+            if (objective != null && objective.CaptureSide != unit.Side)
+            { objective.CaptureSide = unit.Side; objective.CaptureStart = Now; }
+        }
+
+        private void UpdateCaptures()
+        {
+            foreach (var objective in Objectives.Where(o => !o.Captured && o.CaptureStart.HasValue))
+            {
+                var holder = UnitAt(new BoardPosition(objective.X, objective.Lane));
+                if (holder == null || holder.Side != objective.CaptureSide)
+                { objective.CaptureSide = null; objective.CaptureStart = null; continue; }
+                if (Now - objective.CaptureStart.Value < CaptureSeconds) continue;
+                objective.Captured = true;
+                holder.Locked = true;
+                if (objective.Kind == ObjectiveKind.Tower) players[holder.Side].Towers++;
+            }
+            var p1 = players[Side.P1].Towers >= TowerCount;
+            var p2 = players[Side.P2].Towers >= TowerCount;
+            if (p1 && p2) DrawType = "SIMULTANEOUS_TOWER_DRAW";
+            else if (p1) Winner = Side.P1;
+            else if (p2) Winner = Side.P2;
+        }
+
+        private void CheckTimeout()
+        {
+            if (Now < MatchLimitSeconds) return;
+            var p1 = ObjectiveScore(Side.P1); var p2 = ObjectiveScore(Side.P2);
+            if (p1 > p2) { Winner = Side.P1; WinType = "TIMEOUT"; }
+            else if (p2 > p1) { Winner = Side.P2; WinType = "TIMEOUT"; }
+            else DrawType = "TIMEOUT_DRAW";
+        }
+
+        private void AddRay(MatchUnit unit, ICollection<BoardPosition> output, int dx, int dy, int maxDistance)
+        {
+            for (var distance = 1; distance <= maxDistance; distance++)
+            {
+                var position = new BoardPosition(unit.Position.X + dx * distance, unit.Position.Y + dy * distance);
+                if (!InBounds(position) || UnitAt(position) != null) break;
+                output.Add(position);
+            }
+        }
+
+        private static bool InBounds(BoardPosition position) => position.X >= 0 && position.X < Width && position.Y >= 0 && position.Y < Height;
+    }
+}

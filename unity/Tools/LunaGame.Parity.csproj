@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\LunaGame\Assets\Scripts\Core\DestinyGame.cs" Link="DestinyGame.cs" />
+    <Compile Include="..\LunaGame\Assets\Scripts\Core\MatchGame.cs" Link="MatchGame.cs" />
     <Compile Include="DestinyParityHarness.cs" />
   </ItemGroup>
 </Project>
-
