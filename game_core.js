@@ -319,7 +319,7 @@ function runStep(g,ai1="rush",ai2="ranged"){
   for(const [s,p] of plans)if(p)g.addUnit(s,p.kind,p.pos,{spend:true});
   const acts=g.living().map(u=>{
     const controller=u.side===Side.P1?ai1:ai2;
-    return [u,chooseAction(g,u,controller==="human"?"raid":controller,phase)];
+    return [u,controller==="human"?["idle",null]:chooseAction(g,u,controller,phase)];
   });
   // Knight first strike
   for(const [u,[a,arg]] of acts)if(a==="knight"&&u.alive){g.knightJump(u,arg&&arg.uid?arg:null);u.nextAction=g.now+3;}
@@ -342,4 +342,3 @@ function runStep(g,ai1="rush",ai2="ranged"){
 const LunaGame={W,H,MATCH_LIMIT_SECONDS,Side,Kind,SPECS,Game,runStep,planDeploy,chooseAction};
 if(typeof module!=="undefined")module.exports=LunaGame;
 if(typeof window!=="undefined")window.LunaGame=LunaGame;
-

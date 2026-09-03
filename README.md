@@ -14,7 +14,8 @@ Included:
 - 180-second timeout decided by total captured Towers and Outposts
 - live captured-objective score and an in-game timeout rule reminder
 - copyable playtest result summaries with Seed, AI matchup, outcome, time, and scores
-- direct board-click deployment for HUMAN-vs-CPU and local HUMAN-vs-HUMAN play
+- direct tap deployment, unit selection, movement, and attacks for HUMAN-vs-CPU and local HUMAN-vs-HUMAN play
+- iPhone safe-area layout, 44px controls, sticky mobile controls, and touch highlights
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 - reproducible Seed input plus one-click random games
@@ -27,7 +28,7 @@ Run the engine and UI regression suite:
 node test_game.js
 ```
 
-The suite covers the game rules, shared browser-script scope, and the DESTINY / START control flow. GitHub Actions runs it automatically for every push and pull request targeting `main`.
+The suite covers the game rules, manual human control, shared browser-script scope, and the DESTINY / START control flow. GitHub Actions runs it automatically for every push and pull request targeting `main`.
 
 ## Unity production client
 

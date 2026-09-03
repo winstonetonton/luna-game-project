@@ -27,6 +27,7 @@ test("Captured objective timers do not prevent repetition",()=>{
 });
 test("Repetition draw fires on fourth identical state",()=>{let g=new Game(5);for(let i=0;i<4;i++)g.checkRepetition();assert.equal(g.drawType,"REPETITION_DRAW")});
 test("Full engine steps without exception",()=>{let g=new Game(12);for(let i=0;i<20&&!g.winner&&!g.drawType;i++)runStep(g,"rush","ranged");assert(g.now>0)});
+test("Human units are not moved by CPU logic",()=>{let g=new Game(12),u=g.addUnit(Side.P1,Kind.PAWN,[0,0],{spend:false,ready:true});runStep(g,"human","defense");assert.deepEqual(u.pos,[0,0])});
 test("Human controller skips automatic deployment",()=>{
   const g=new Game(12);runStep(g,"human","rush");
   assert.equal(g.living(Side.P1).length,0);
@@ -151,9 +152,8 @@ test("DESTINY and START controls work in a browser-like DOM",()=>{
   deployCell.onclick();
   assert.match(elements.get("log").textContent,/P1 deploy 歩/);
   assert.match(elements.get("humanStatus1").textContent,/配置済み/);
-  assert(!elements.get("board").children.slice(-40).some(cell=>typeof cell.onclick==="function"),"only one manual deployment is allowed per round");
+  assert(!elements.get("board").children.slice(-40).some(cell=>cell.classList.contains("deployable")),"only one manual deployment is allowed per round");
   elements.get("step").onclick();
   assert.equal(elements.get("time").textContent,3);
   assert(elements.get("board").children.slice(-40).some(cell=>typeof cell.onclick==="function"),"deployment cells must reactivate next round");
 });
-

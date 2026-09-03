@@ -2,7 +2,7 @@
 (()=>{
 "use strict";
 const {Side,Kind,Game,runStep,MATCH_LIMIT_SECONDS}=window.LunaGame;
-let game=null,timer=null,manualReady={[Side.P1]:true,[Side.P2]:true};
+let game=null,timer=null,selectedUid=null,manualReady={[Side.P1]:true,[Side.P2]:true};
 const $=id=>document.getElementById(id);
 const humanSide=side=>$("ai"+side).value==="human";
 const hasHuman=()=>humanSide(Side.P1)||humanSide(Side.P2);
@@ -30,6 +30,7 @@ function newGame(){
   const seed=seedValue();
   game=new Game(seed);
   manualReady={[Side.P1]:true,[Side.P2]:true};
+  selectedUid=null;
   $("step").disabled=false;
   $("start").disabled=hasHuman();
   $("overlay").classList.add("hidden");
@@ -71,6 +72,28 @@ function manualDeploy(side,pos){
     render();
   }catch(error){log(`P${side} deploy blocked: ${error.message}`);}
 }
+function selectedUnit(){return game?.living().find(u=>u.uid===selectedUid)||null;}
+function selectUnit(u){
+  if(!u||!humanSide(u.side))return;
+  selectedUid=u.uid;
+  $("humanStatus"+u.side).textContent=u.locked?"拠点を確保中":"移動先または攻撃対象をタップ";
+  render();
+}
+function manualAction(u,pos){
+  if(!u||!u.alive||u.locked||!humanSide(u.side))return;
+  const target=game.unitAt(pos),landing=[u.pos[0]+2*(u.side===Side.P1?1:-1),u.pos[1]];
+  let acted=false;
+  if(u.kind===Kind.KNIGHT&&game.now>=u.nextAction&&landing[0]===pos[0]&&landing[1]===pos[1]&&(!target||target.side!==u.side)){
+    game.knightJump(u,target);u.nextAction=game.now+3;acted=true;
+  }else if(target&&target.side!==u.side&&game.now>=u.nextAttack&&game.attackables(u).includes(target)){
+    u.nextAttack=game.now+window.LunaGame.SPECS[u.kind].cd;u.nextAction=game.now+3;
+    game.resolveAttacks([[u,target]]);acted=true;
+  }else if(game.now>=u.nextAction&&game.legalMoves(u).some(p=>p[0]===pos[0]&&p[1]===pos[1])){
+    u.pos=[...pos];u.nextAction=game.now+3;game.lastProgress=game.now;acted=true;
+  }
+  if(acted){for(const living of game.living())game.startCapture(living);game.updateCaptures();selectedUid=null;log(`P${u.side} manual ${u.kind} @ ${pos[0]+1}${String.fromCharCode(65+pos[1])}`);}
+  render();
+}
 async function copyResult(){
   try{
     await navigator.clipboard.writeText($("resultText").textContent);
@@ -95,18 +118,22 @@ function closeResult(){
 }
 function render(){
   $("board").innerHTML="";
+  const selected=selectedUnit(),moves=selected?game.legalMoves(selected):[],targets=selected?game.attackables(selected):[];
+  if(selected?.kind===Kind.KNIGHT&&game.now>=selected.nextAction){const p=[selected.pos[0]+2*(selected.side===Side.P1?1:-1),selected.pos[1]],u=game.unitAt(p);if(p[0]>=0&&p[0]<8&&(!u||u.side!==selected.side))moves.push(p);}
   for(let y=0;y<5;y++)for(let x=0;x<8;x++){
     const c=document.createElement("div");c.className="cell";
     const side=x<4?Side.P1:Side.P2;
-    if(canManualDeploy(side)&&game.spawnCells(side).some(pos=>pos[0]===x&&pos[1]===y)){
+    const u=game.unitAt([x,y]),isAction=!!selected&&(moves.some(p=>p[0]===x&&p[1]===y)||targets.includes(u));
+    if(isAction){c.classList.add("actionable");c.tabIndex=0;c.setAttribute("role","button");c.onclick=()=>manualAction(selected,[x,y]);}
+    else if(u&&humanSide(u.side)){c.tabIndex=0;c.setAttribute("role","button");c.onclick=()=>selectUnit(u);if(u.uid===selectedUid)c.classList.add("selected-unit");}
+    else if(!selected&&canManualDeploy(side)&&game.spawnCells(side).some(pos=>pos[0]===x&&pos[1]===y)){
       c.classList.add("deployable");c.classList.add(side===Side.P1?"p1-deploy":"p2-deploy");
       c.tabIndex=0;c.setAttribute("role","button");c.setAttribute("aria-label",`P${side}を${x+1}${String.fromCharCode(65+y)}に配置`);
       c.onclick=()=>manualDeploy(side,[x,y]);
-      c.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();manualDeploy(side,[x,y]);}};
     }
+    if(c.onclick)c.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();c.click();}};
     const o=game.objectives.find(o=>o.pos[0]===x&&o.pos[1]===y);
     if(o){const q=document.createElement("span");q.className=`obj ${o.kind}`;q.textContent=o.kind==="tower"?"T":"O";if(o.captured)q.textContent+="✓";c.appendChild(q);}
-    const u=game.unitAt([x,y]);
     if(u){const q=document.createElement("div");q.className=`unit p${u.side}`;q.textContent=u.kind;c.appendChild(q);}
     const co=document.createElement("span");co.className="coord";co.textContent=`${x+1}${String.fromCharCode(65+y)}`;c.appendChild(co);
     $("board").appendChild(c);
@@ -138,4 +165,3 @@ window.addEventListener("DOMContentLoaded",()=>{
 });
 window.addEventListener("keydown",event=>{if(event.key==="Escape")closeResult();});
 })();
-
