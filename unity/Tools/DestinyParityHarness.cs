@@ -20,7 +20,8 @@ internal static class DestinyParityHarness
             VerifyFirstTenThousandSeeds();
             VerifyMatchRules();
             VerifyCombatRules();
-            Console.WriteLine("PASS Unity C# Destiny parity: 10,000 Seeds match game_core.js");
+            VerifyCpuMatches();
+            Console.WriteLine("PASS Unity C# core: 10,000 Seeds match game_core.js; combat and all 16 CPU pairings verified");
             return 0;
         }
         catch (Exception error)
@@ -83,6 +84,33 @@ internal static class DestinyParityHarness
         knightGame.KnightJump(knight);
         Equal(false, landingTarget.Alive, "Knight first strike");
         Equal(new BoardPosition(4, 1), knight.Position, "Knight lands after kill");
+    }
+
+    private static void VerifyCpuMatches()
+    {
+        var styles = (AiStyle[])Enum.GetValues(typeof(AiStyle));
+        foreach (var p1 in styles)
+        foreach (var p2 in styles)
+        {
+            var runner = new MatchRunner((uint)(1000 + (int)p1 * 10 + (int)p2), p1, p2);
+            runner.RunToCompletion();
+            Equal(true, runner.Finished, $"CPU match {p1} vs {p2} finished");
+            Equal(true, runner.Game.Now <= MatchGame.MatchLimitSeconds, $"CPU match {p1} vs {p2} time limit");
+            Equal(true, runner.Game.Units.Count > 0, $"CPU match {p1} vs {p2} deployed units");
+        }
+
+        var first = new MatchRunner(424242u, AiStyle.Raid, AiStyle.Defense);
+        var second = new MatchRunner(424242u, AiStyle.Raid, AiStyle.Defense);
+        first.RunToCompletion(); second.RunToCompletion();
+        Equal(MatchFingerprint(first.Game), MatchFingerprint(second.Game), "CPU match determinism");
+    }
+
+    private static string MatchFingerprint(MatchGame game)
+    {
+        var units = string.Join(";", game.Living()
+            .OrderBy(unit => unit.Uid)
+            .Select(unit => $"{unit.Uid},{(int)unit.Side},{unit.Kind},{unit.Position},{unit.Hp},{unit.Locked}"));
+        return $"{game.Now}|{game.Winner}|{game.WinType}|{game.DrawType}|{game.ObjectiveScore(Side.P1)}-{game.ObjectiveScore(Side.P2)}|{units}";
     }
 
     private static void VerifyFixture(

@@ -119,5 +119,35 @@ namespace LunaGame.Core.Tests
             Assert.That(target.Alive, Is.False);
             Assert.That(knight.Position, Is.EqualTo(new BoardPosition(4, 1)));
         }
+
+        [Test]
+        public void EveryCpuPairingCompletesWithinMatchLimit()
+        {
+            foreach (AiStyle p1 in System.Enum.GetValues(typeof(AiStyle)))
+            foreach (AiStyle p2 in System.Enum.GetValues(typeof(AiStyle)))
+            {
+                var runner = new MatchRunner((uint)(1000 + (int)p1 * 10 + (int)p2), p1, p2);
+                runner.RunToCompletion();
+
+                Assert.That(runner.Finished, Is.True, $"{p1} vs {p2}");
+                Assert.That(runner.Game.Now, Is.LessThanOrEqualTo(MatchGame.MatchLimitSeconds));
+                Assert.That(runner.Game.Units, Is.Not.Empty);
+            }
+        }
+
+        [Test]
+        public void SameSeedAndCpuStylesProduceSameResult()
+        {
+            var first = new MatchRunner(424242u, AiStyle.Raid, AiStyle.Defense);
+            var second = new MatchRunner(424242u, AiStyle.Raid, AiStyle.Defense);
+            first.RunToCompletion();
+            second.RunToCompletion();
+
+            Assert.That(second.Game.Now, Is.EqualTo(first.Game.Now));
+            Assert.That(second.Game.Winner, Is.EqualTo(first.Game.Winner));
+            Assert.That(second.Game.DrawType, Is.EqualTo(first.Game.DrawType));
+            Assert.That(second.Game.ObjectiveScore(Side.P1), Is.EqualTo(first.Game.ObjectiveScore(Side.P1)));
+            Assert.That(second.Game.ObjectiveScore(Side.P2), Is.EqualTo(first.Game.ObjectiveScore(Side.P2)));
+        }
     }
 }

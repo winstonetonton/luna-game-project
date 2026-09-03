@@ -59,6 +59,14 @@ namespace LunaGame.Core
         public MatchUnit Target { get; }
     }
 
+    public sealed class MoveOrder
+    {
+        public MoveOrder(MatchUnit unit, BoardPosition destination)
+        { Unit = unit; Destination = destination; }
+        public MatchUnit Unit { get; }
+        public BoardPosition Destination { get; }
+    }
+
     public sealed class MatchGame
     {
         public const int Width = 8;
@@ -108,6 +116,19 @@ namespace LunaGame.Core
 
         public MatchUnit UnitAt(BoardPosition position) => units.FirstOrDefault(u => u.Alive && u.Position.Equals(position));
         public IEnumerable<MatchUnit> Living(Side? side = null) => units.Where(u => u.Alive && (!side.HasValue || u.Side == side.Value));
+
+        public IReadOnlyList<BoardPosition> SpawnCells(Side side)
+        {
+            var firstColumn = side == Side.P1 ? 0 : 4;
+            var result = new List<BoardPosition>();
+            for (var x = firstColumn; x < firstColumn + 4; x++)
+                for (var y = 0; y < Height; y++)
+                {
+                    var position = new BoardPosition(x, y);
+                    if (UnitAt(position) == null) result.Add(position);
+                }
+            return result;
+        }
 
         public MatchUnit AddUnit(Side side, UnitKind kind, BoardPosition position, bool spend = true, bool ready = false)
         {
@@ -221,8 +242,7 @@ namespace LunaGame.Core
             var valid = new List<AttackOrder>();
             foreach (var order in orders)
             {
-                if (!order.Attacker.Alive || !order.Target.Alive || Now < order.Attacker.NextAttack ||
-                    !Attackables(order.Attacker).Contains(order.Target)) continue;
+                if (!order.Attacker.Alive || !order.Target.Alive || Now < order.Attacker.NextAttack) continue;
                 damage[order.Target.Uid] = (damage.TryGetValue(order.Target.Uid, out var current) ? current : 0) + Specs[order.Attacker.Kind].Attack;
                 order.Attacker.NextAttack = Now + Specs[order.Attacker.Kind].Cooldown;
                 order.Attacker.NextAction = Now + ActionTick;
@@ -255,6 +275,25 @@ namespace LunaGame.Core
             unit.Position = destination;
             unit.NextAction = Now + ActionTick;
             StartCapture(unit);
+        }
+
+        public void ResolveMoves(IEnumerable<MoveOrder> orders)
+        {
+            foreach (var claim in orders
+                .Where(order => order.Unit.Alive && !order.Unit.Locked && Now >= order.Unit.NextAction && LegalMoves(order.Unit).Contains(order.Destination))
+                .GroupBy(order => order.Destination))
+            {
+                if (UnitAt(claim.Key) != null) continue;
+                var winner = claim.OrderBy(order => order.Unit.Uid).First().Unit;
+                winner.Position = claim.Key;
+                winner.NextAction = Now + ActionTick;
+            }
+        }
+
+        public void ResolveObjectives()
+        {
+            foreach (var unit in Living()) StartCapture(unit);
+            UpdateCaptures();
         }
 
         public void AdvanceTick()
