@@ -29,6 +29,10 @@ node test_game.js
 
 The suite covers the game rules, shared browser-script scope, and the DESTINY / START control flow. GitHub Actions runs it automatically for every push and pull request targeting `main`.
 
+## Unity production client
+
+The Google Play production client lives in `unity/LunaGame`. Its first migration gate ports the deterministic RNG and Destiny objective generation to C#, with shared Seed fixtures proving parity with this browser prototype.
+
 Local preview:
 `python3 -m http.server 8000`
 then open `http://localhost:8000`.

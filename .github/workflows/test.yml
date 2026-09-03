@@ -18,3 +18,8 @@ jobs:
         with:
           node-version: 22
       - run: node test_game.js
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet run --project unity/Tools/LunaGame.Parity.csproj --configuration Release
+

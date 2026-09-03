@@ -1,0 +1,18 @@
+# Unity generated files
+unity/LunaGame/[Ll]ibrary/
+unity/LunaGame/[Tt]emp/
+unity/LunaGame/[Oo]bj/
+unity/LunaGame/[Bb]uild/
+unity/LunaGame/[Bb]uilds/
+unity/LunaGame/[Ll]ogs/
+unity/LunaGame/[Uu]ser[Ss]ettings/
+unity/LunaGame/MemoryCaptures/
+unity/Tools/bin/
+
+# IDE files
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+
