@@ -1,0 +1,26 @@
+fileFormatVersion: 2
+guid: d605034b5fbd43f1ac95783f153a5561
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+  isReadable: 0
+  textureType: 2
+  textureShape: 1
+  sRGBTexture: 1
+  alphaSource: 0
+  alphaIsTransparency: 0
+  textureCompression: 1
+  maxTextureSize: 2048
+  platformSettings: []
+  spriteMode: 1
+  spritePixelsToUnits: 100
+  spritePivot: {x: 0.5, y: 0.5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  userData:
+  assetBundleName:
+  assetBundleVariant:

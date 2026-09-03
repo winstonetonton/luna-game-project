@@ -16,6 +16,7 @@ Included:
 - copyable playtest result summaries with Seed, AI matchup, outcome, time, and scores
 - direct tap deployment, unit selection, movement, and attacks for HUMAN-vs-CPU and local HUMAN-vs-HUMAN play
 - iPhone safe-area layout, 44px controls, sticky mobile controls, and touch highlights
+- installable iPhone/Android PWA with app icon and offline startup cache
 - four AI personalities and deterministic deployment/movement baseline
 - visual board and step/autoplay UI
 - reproducible Seed input plus one-click random games

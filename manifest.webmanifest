@@ -1,0 +1,15 @@
+{
+  "name": "Luna Game",
+  "short_name": "Luna",
+  "description": "Deterministic real-time strategy board game",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {"src": "assets/icon-192.jpg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any maskable"},
+    {"src": "assets/icon-512.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any maskable"}
+  ]
+}
